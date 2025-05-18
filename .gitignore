@@ -1,0 +1,46 @@
+# ================================
+# === Node.js / React Frontend ===
+# ================================
+node_modules/
+build/
+dist/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env.local
+.env.development
+.env.production
+
+# ==========================
+# === Express Backend ===
+# ==========================
+backend/node_modules/
+backend/.env
+
+# ===============================
+# === Python (XTTS Server) ===
+# ===============================
+env/
+envtts/
+.venv/
+__pycache__/
+*.py[cod]
+*.log
+
+# XTTS model checkpoints & audio
+tts/checkpoint/
+tts/output/
+tts/ref_audio/
+tts/*.pth
+tts/*.wav
+tts/.env
+
+# =====================
+# === Editor / OS ===
+# =====================
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
