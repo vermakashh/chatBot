@@ -38,8 +38,13 @@ router.get("/contacts/:userId", async (req, res) => {
 });
 
 router.get("/users", async (req, res) => {
-  const users = await User.find().select("-password");
-  res.json(users);
+  try {
+    const users = await User.find().select("-password");
+    res.json(users);
+  } catch (err) {
+    console.error("Fetch users error:", err);
+    res.status(500).json({ error: "Failed to fetch users" });
+  }
 });
 
 router.delete("/contacts/:userId/:contactId", async (req, res) => {

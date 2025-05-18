@@ -12,7 +12,6 @@ export default function ChatWindow() {
   const [showVoiceModal, setShowVoiceModal] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // Named handler for message reception
   const handleReceiveMessage = (msg) => {
     if (
       (msg.senderId === user.id && msg.receiverId === selectedUser._id) ||
@@ -22,7 +21,6 @@ export default function ChatWindow() {
     }
   };
 
-  // Named handler for typing event
   const handleTyping = ({ from }) => {
     if (from === selectedUser._id) {
       setTypingUser(from);
@@ -30,32 +28,50 @@ export default function ChatWindow() {
     }
   };
 
-  // Named handler for voice clone
-  const handlePlayVoice = async (text) => {
-    const res = await fetch("https://21e8-192-140-153-103.ngrok-free.app/api/tts-clone", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, user_id: user.id }),
-    });
-  
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    new Audio(url).play();
-  };   
+  const handlePlayVoice = async (messageText) => {
+    const userId = user.username || user.email || user.id;
+    if (!messageText || !userId) {
+      console.error("Missing text or username. Skipping request.");
+      return;
+    }
+
+    try {
+      const res = await fetch("https://ac8a-192-140-153-103.ngrok-free.app/api/tts-clone", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text: messageText,
+          user_id: user.username,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("TTS API Error:", errorText);
+        alert("Voice playback failed. Server said: " + errorText);
+        return;
+      }      
+
+      const blob = await res.blob();
+      const audio = new Audio(URL.createObjectURL(blob));
+      audio.play();
+    } catch (err) {
+      console.error("Fetch error:", err);
+    }
+  };
 
   useEffect(() => {
     if (!selectedUser) return;
 
-    // Fetch messages from backend
     axios
       .get(`https://chatbot-01ki.onrender.com/api/messages/${user.id}/${selectedUser._id}`)
       .then((res) => setMessages(res.data));
 
-    // Register socket listeners
     socket.on("receive-message", handleReceiveMessage);
     socket.on("typing", handleTyping);
 
-    // Cleanup to prevent multiple listener stacking
     return () => {
       socket.off("receive-message", handleReceiveMessage);
       socket.off("typing", handleTyping);
@@ -72,7 +88,6 @@ export default function ChatWindow() {
       timestamp: new Date(),
     };
 
-    // Emit only, do not append optimistically
     socket.emit("send-message", newMessage);
     setMessage("");
   };
@@ -90,7 +105,11 @@ export default function ChatWindow() {
   }, [messages]);
 
   if (!selectedUser) {
-    return <div className="flex-1 flex items-center justify-center text-gray-400">Select a user to start chatting</div>;
+    return (
+      <div className="flex-1 flex items-center justify-center text-gray-400">
+        Select a user to start chatting
+      </div>
+    );
   }
 
   return (
@@ -125,7 +144,11 @@ export default function ChatWindow() {
               })}
             </span>
 
-            <button onClick={() => handlePlayVoice(msg.message)}> 
+            <button
+              onClick={() => handlePlayVoice(msg.message)}
+              className="mt-1 text-blue-600 hover:text-blue-800 text-sm"
+              title="Play Voice"
+            >
               🔊
             </button>
           </div>
@@ -167,7 +190,6 @@ export default function ChatWindow() {
       {showVoiceModal && (
         <VoiceUploadModal
           onClose={() => setShowVoiceModal(false)}
-          userId={user.id}
           onUploadSuccess={() => setShowVoiceModal(false)}
         />
       )}
