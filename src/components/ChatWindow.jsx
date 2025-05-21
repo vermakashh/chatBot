@@ -1,18 +1,25 @@
 import { useContext, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
-import { RiSoundModuleLine } from "react-icons/ri";
+import voicecloneIcon from "./assets/voiceclone.webp";
+import { Volume2 } from "lucide-react";
 import VoiceUploadModal from "./VoiceUploadModal";
+import MessageBar from "./MessageBar";
 
 export default function ChatWindow() {
   const { user, selectedUser, socket } = useContext(AuthContext);
   const [messages, setMessages] = useState([]);
-  const [message, setMessage] = useState("");
   const [typingUser, setTypingUser] = useState(null);
   const [showVoiceModal, setShowVoiceModal] = useState(false);
+  const [playingIndex, setPlayingIndex] = useState(null);
+  const [voiceUploaded, setVoiceUploaded] = useState(false);
+  const [showVoiceInfoBox, setShowVoiceInfoBox] = useState(false);
   const messagesEndRef = useRef(null);
 
   const handleReceiveMessage = (msg) => {
+    const isVoice = msg.message?.includes(".wav") || msg.type === "voice";
+    if (isVoice) msg.type = "voice";
+
     if (
       (msg.senderId === user.id && msg.receiverId === selectedUser._id) ||
       (msg.receiverId === user.id && msg.senderId === selectedUser._id)
@@ -28,37 +35,31 @@ export default function ChatWindow() {
     }
   };
 
-  const handlePlayVoice = async (messageText) => {
+  const handlePlayVoice = async (messageText, index) => {
     const userId = user.username || user.email || user.id;
-    if (!messageText || !userId) {
-      console.error("Missing text or username. Skipping request.");
-      return;
-    }
+    if (!messageText || !userId) return;
 
     try {
-      const res = await fetch("https://ac8a-192-140-153-103.ngrok-free.app/api/tts-clone", {
+      setPlayingIndex(index);
+      const res = await fetch("https://40e2-192-140-153-103.ngrok-free.app/api/tts-clone", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          text: messageText,
-          user_id: user.username,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: messageText, user_id: user.username }),
       });
 
       if (!res.ok) {
         const errorText = await res.text();
-        console.error("TTS API Error:", errorText);
         alert("Voice playback failed. Server said: " + errorText);
         return;
-      }      
+      }
 
       const blob = await res.blob();
       const audio = new Audio(URL.createObjectURL(blob));
       audio.play();
+      audio.onended = () => setPlayingIndex(null);
     } catch (err) {
-      console.error("Fetch error:", err);
+      console.error("Playback error:", err);
+      setPlayingIndex(null);
     }
   };
 
@@ -78,28 +79,6 @@ export default function ChatWindow() {
     };
   }, [selectedUser, user.id]);
 
-  const handleSend = () => {
-    if (message.trim() === "") return;
-
-    const newMessage = {
-      senderId: user.id,
-      receiverId: selectedUser._id,
-      message,
-      timestamp: new Date(),
-    };
-
-    socket.emit("send-message", newMessage);
-    setMessage("");
-  };
-
-  const handleTypingInput = (e) => {
-    setMessage(e.target.value);
-    socket.emit("typing", {
-      from: user.id,
-      to: selectedUser._id,
-    });
-  };
-
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -113,17 +92,42 @@ export default function ChatWindow() {
   }
 
   return (
-    <div className="w-3/4 h-screen flex flex-col">
+    <div className="w-3/4 h-screen flex flex-col relative">
       {/* Chat Header */}
       <div className="p-4 border-b font-semibold text-lg bg-white flex justify-between items-center">
         <span>{selectedUser.username || selectedUser.email}</span>
         <button
-          className="text-blue-600 hover:text-blue-800 transition"
-          onClick={() => setShowVoiceModal(true)}
+          className="transition hover:opacity-80"
+          onClick={() => {
+            if (voiceUploaded) {
+              setShowVoiceInfoBox(true);
+            } else {
+              setShowVoiceModal(true);
+            }
+          }}
+          title="Voice Cloning"
         >
-          <RiSoundModuleLine className="w-6 h-6" />
+          <img src={voicecloneIcon} alt="Voice Cloning" className="w-8 h-8" />
         </button>
       </div>
+
+      {/* Info Box if Voice Cloning already enabled */}
+      {showVoiceInfoBox && (
+        <div className="absolute top-20 right-6 z-50 bg-white border rounded-md shadow-lg p-4 w-80">
+          <p className="text-sm text-gray-800 mb-2">
+            ✅ You have successfully enabled Voice Cloning Feature.
+          </p>
+          <button
+            className="text-blue-600 hover:underline text-sm"
+            onClick={() => {
+              setShowVoiceModal(true);
+              setShowVoiceInfoBox(false);
+            }}
+          >
+            Wish to upload a better audio file? Re-Upload
+          </button>
+        </div>
+      )}
 
       {/* Message List */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
@@ -134,7 +138,17 @@ export default function ChatWindow() {
               msg.senderId === user.id ? "bg-blue-100 ml-auto" : "bg-white mr-auto"
             }`}
           >
-            <p>{msg.message}</p>
+            {/* Voice Message */}
+            {msg.type === "voice" || msg.message?.includes(".wav") ? (
+              <audio controls className="mt-1">
+                <source src={`https://chatbot-01ki.onrender.com${msg.message}`} type="audio/wav" />
+                Your browser does not support the audio element.
+              </audio>
+            ) : (
+              <p>{msg.message}</p>
+            )}
+
+            {/* Timestamp */}
             <span className="text-xs text-gray-400 block mt-1 text-right">
               {new Date(msg.timestamp).toLocaleTimeString("en-IN", {
                 hour: "numeric",
@@ -144,13 +158,20 @@ export default function ChatWindow() {
               })}
             </span>
 
-            <button
-              onClick={() => handlePlayVoice(msg.message)}
-              className="mt-1 text-blue-600 hover:text-blue-800 text-sm"
-              title="Play Voice"
-            >
-              🔊
-            </button>
+            {/* Play Button for Text-to-Speech */}
+            {msg.type !== "voice" && (
+              <button
+                onClick={() => handlePlayVoice(msg.message, idx)}
+                className={`mt-1 text-sm transition-colors duration-200 ${
+                  playingIndex === idx
+                    ? "text-blue-900"
+                    : "text-blue-600 hover:text-blue-800"
+                }`}
+                title="Play Voice"
+              >
+                <Volume2 className="w-4 h-4 inline" />
+              </button>
+            )}
           </div>
         ))}
         {typingUser && (
@@ -159,38 +180,55 @@ export default function ChatWindow() {
         <div ref={messagesEndRef}></div>
       </div>
 
-      {/* Input Box */}
-      <div className="p-4 border-t bg-white">
-        <div className="flex items-center bg-blue-50 rounded-full px-4 py-2 w-full">
-          <input
-            type="text"
-            value={message}
-            onChange={handleTypingInput}
-            placeholder="Type your message...."
-            className="flex-1 bg-transparent outline-none placeholder-gray-500 text-sm"
-            onKeyDown={(e) => e.key === "Enter" && handleSend()}
-          />
-          <button
-            onClick={handleSend}
-            className="ml-2 p-2 rounded-full hover:bg-blue-100 transition"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-7 h-7 text-blue-600"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <path d="M3.4 20.3l17.2-8.6c.6-.3.6-1.1 0-1.4L3.4 1.7c-.7-.3-1.4.3-1.2 1.1l2.1 7.6c.1.3.3.5.6.6l8.2 1.9-8.2 1.9c-.3.1-.5.3-.6.6l-2.1 7.6c-.2.8.5 1.4 1.2 1.1z" />
-            </svg>
-          </button>
-        </div>
-      </div>
+      {/* Message Bar */}
+      <MessageBar
+        selectedUser={selectedUser}
+        onTyping={() =>
+          socket.emit("typing", { from: user.id, to: selectedUser._id })
+        }
+        onSendMessage={(text) => {
+          const msg = {
+            senderId: user.id,
+            receiverId: selectedUser._id,
+            message: text,
+            timestamp: new Date(),
+          };
+          socket.emit("send-message", msg);
+          setMessages((prev) => [...prev, msg]);
+        }}
+        onSendVoiceNote={async (blob) => {
+          const formData = new FormData();
+          formData.append("voiceNote", blob, "voice-note.wav");
+
+          try {
+            const res = await axios.post("https://chatbot-01ki.onrender.com/api/voice/upload", formData);
+            const voiceUrl = res.data.url;
+
+            const msg = {
+              senderId: user.id,
+              receiverId: selectedUser._id,
+              message: voiceUrl,
+              type: "voice",
+              timestamp: new Date(),
+            };
+
+            socket.emit("send-message", msg);
+            setMessages((prev) => [...prev, msg]);
+          } catch (err) {
+            console.error("Voice upload failed:", err);
+            alert("Voice note upload failed.");
+          }
+        }}
+      />
 
       {/* Voice Cloning Modal */}
       {showVoiceModal && (
         <VoiceUploadModal
           onClose={() => setShowVoiceModal(false)}
-          onUploadSuccess={() => setShowVoiceModal(false)}
+          onUploadSuccess={() => {
+            setVoiceUploaded(true);
+            setShowVoiceModal(false);
+          }}
         />
       )}
     </div>

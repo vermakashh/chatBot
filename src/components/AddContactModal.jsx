@@ -6,26 +6,48 @@ export default function AddContactModal({ userId, onClose, onContactAdded }) {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    axios.get("https://chatbot-01ki.onrender.com/api/auth/users").then((res) => {
-      setAllUsers(res.data.filter((u) => u._id !== userId));
-    });
+    if (!userId) {
+      console.warn("User ID not provided to AddContactModal");
+      return;
+    }
+
+    axios
+      .get("https://chatbot-01ki.onrender.com/api/auth/users")
+      .then((res) => {
+        const filteredUsers = res.data.filter((u) => u._id !== userId);
+        setAllUsers(filteredUsers);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch users:", err);
+        alert("Error fetching users. Please try again.");
+      });
   }, [userId]);
 
   const handleAdd = async (contactId) => {
+    if (!userId || !contactId) {
+      alert("Invalid user or contact ID.");
+      return;
+    }
+
     try {
-      await axios.post(`https://chatbot-01ki.onrender.com/api/auth/contacts/${userId}/${contactId}`);
+      await axios.post(
+        `https://chatbot-01ki.onrender.com/api/auth/contacts/${userId}/${contactId}`
+      );
+
       const newContact = allUsers.find((u) => u._id === contactId);
-      onContactAdded(newContact);
+      if (newContact) {
+        onContactAdded(newContact);
+      }
       onClose();
     } catch (err) {
-      console.error("Add contact failed");
+      console.error("Add contact failed:", err.response?.data || err.message);
       alert("Failed to add contact.");
-    }    
+    }
   };
 
   const filtered = allUsers.filter((u) =>
     u?.username?.toLowerCase().includes(search.toLowerCase())
-  );  
+  );
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">

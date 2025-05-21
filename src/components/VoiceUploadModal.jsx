@@ -7,7 +7,7 @@ export default function VoiceUploadModal({ onClose, onUploadSuccess }) {
   const [audioFile, setAudioFile] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const { user } = useContext(AuthContext); // ✅ Get user context
+  const { user } = useContext(AuthContext);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -24,7 +24,7 @@ export default function VoiceUploadModal({ onClose, onUploadSuccess }) {
 
     const formData = new FormData();
     formData.append("voice", audioFile);
-    formData.append("username", user.username); // ✅ Backend expects this
+    formData.append("username", user.username); 
 
     try {
       setLoading(true);

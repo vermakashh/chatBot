@@ -7,6 +7,7 @@ const dotenv = require("dotenv");
 const authRoutes = require("./routes/auth");
 const voiceUploadRoute = require("./routes/voiceUpload");
 const Message = require("./models/Message");
+const voiceNoteRoutes = require("./routes/voiceNoteRoutes");
 
 dotenv.config();
 
@@ -46,6 +47,11 @@ const io = socketIo(server, {
   }
 });
 
+// Voice Note
+app.use("/api/voice", voiceNoteRoutes);
+app.use("/voiceNotes", express.static("uploads/voiceNotes")); // to serve files
+
+//TTS 
 const ttsCloneRoute = require("./routes/ttsCloneRoute");
 app.use("/api/tts-clone", ttsCloneRoute);
 

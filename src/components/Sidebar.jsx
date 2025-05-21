@@ -4,7 +4,8 @@ import { AuthContext } from "../context/AuthContext";
 import OptionsMenu from "./OptionsMenu";
 import logo from "./assets/logo.png";
 import { FiTrash2 } from "react-icons/fi";
-import AddContactModal from "./AddContactModal"; // NEW MODAL COMPONENT
+import AddContactModal from "./AddContactModal";
+import { Pencil } from "lucide-react"; // 👈 Import Pencil icon
 
 export default function Sidebar() {
   const { user, setSelectedUser, socket, selectedUser } = useContext(AuthContext);
@@ -17,11 +18,15 @@ export default function Sidebar() {
     return () => socket.off("online-users");
   }, [socket]);
 
-  // Fetch only added contacts
   useEffect(() => {
+    if (!user?.id) return;
+
     axios
       .get(`https://chatbot-01ki.onrender.com/api/auth/contacts/${user.id}`)
-      .then((res) => setUsers(res.data));
+      .then((res) => setUsers(res.data))
+      .catch((err) => {
+        console.error("Failed to fetch contacts:", err);
+      });
   }, [user]);
 
   const handleDeleteContact = async (contactId) => {
@@ -40,7 +45,7 @@ export default function Sidebar() {
   };
 
   return (
-    <div className="w-1/4 h-screen bg-white border-r border-gray-200 flex flex-col">
+    <div className="w-1/4 h-screen bg-white border-r border-gray-200 flex flex-col relative">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b h-16">
         <div className="h-8 w-auto">
@@ -51,16 +56,6 @@ export default function Sidebar() {
           />
         </div>
         <OptionsMenu />
-      </div>
-
-      {/* Add Contact Button */}
-      <div className="px-4 pt-3">
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="text-blue-600 text-sm hover:underline"
-        >
-          + Add Contact
-        </button>
       </div>
 
       {/* Contact List */}
@@ -96,6 +91,15 @@ export default function Sidebar() {
           </div>
         ))}
       </div>
+
+      {/* Floating Add Contact Button */}
+      <button
+        onClick={() => setShowAddModal(true)}
+        title="Add Contact"
+        className="absolute bottom-5 right-5 bg-[#14488a] text-white p-3 rounded-full shadow-lg hover:bg-[#0f3971] transition"
+      >
+        <Pencil className="w-7 h-7" />
+      </button>
 
       {/* Modal for Add Contact */}
       {showAddModal && (

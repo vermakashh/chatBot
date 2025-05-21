@@ -47,7 +47,9 @@ def tts_clone():
             print(f"[ERROR] Failed to download audio from S3: {s3_err}")
             return jsonify({"error": "Reference audio not found in S3"}), 404
 
-        # Run inference
+        # Run inference directly with provided text
+        print(f"[INFO] Text: {text}")
+
         result = subprocess.run([
             "python3", "xtts_infer.py",
             "--config", "checkpoint/config.json",
