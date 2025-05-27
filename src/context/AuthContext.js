@@ -2,60 +2,89 @@ import { createContext, useEffect, useMemo, useState } from "react";
 import { io } from "socket.io-client";
 import { jwtDecode } from "jwt-decode";
 import axios from "axios";
+import { devLog, devWarn, devError } from "../utils/logger";
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(undefined);
   const [selectedUser, setSelectedUser] = useState(null);
 
   const socket = useMemo(() => {
-    return io("https://chatbot-01ki.onrender.com", {
+    const s = io("https://chatbot-01ki.onrender.com", {
       transports: ["websocket"],
+      reconnectionAttempts: 5,
+      timeout: 10000,
     });
+
+    s.on("connect_error", (err) => {
+      devWarn("[Socket] Connect error:", err.message);
+    });
+
+    return s;
   }, []);
 
   useEffect(() => {
     const fetchUserFromToken = async () => {
+      devLog("[AuthContext] Fetching user from token...");
       const token = localStorage.getItem("token");
-      if (!token) return;
+
+      if (!token) {
+        devWarn("[AuthContext] No token found.");
+        setUser(null);
+        return;
+      }
 
       try {
         const decoded = jwtDecode(token);
+        devLog("[AuthContext] Token decoded:", decoded);
 
-        // ✅ Optional: Token expiration check
         if (decoded.exp && decoded.exp * 1000 < Date.now()) {
-          console.warn("JWT token expired");
+          devWarn("[AuthContext] Token expired.");
           localStorage.removeItem("token");
           setUser(null);
           return;
         }
 
-        // ✅ Fetch all users
         const res = await axios.get("https://chatbot-01ki.onrender.com/api/auth/users");
+        devLog("[AuthContext] Fetched all users");
 
-        // ✅ Match user by decoded ID
         const foundUser = res.data.find((u) => u._id === decoded.id);
         if (foundUser) {
-          setUser({ ...foundUser, token });
-          socket.emit("register-user", decoded.id); // ✅ Register for socket communication
+          const fullUser = { ...foundUser, token };
+          setUser(fullUser);
+          devLog("[AuthContext] User found:", foundUser);
         } else {
-          console.warn("User not found with decoded ID.");
+          devWarn("[AuthContext] No matching user found.");
           localStorage.removeItem("token");
+          setUser(null);
         }
       } catch (err) {
-        console.error("Token validation or user fetch failed:", err);
+        devError("[AuthContext] Token validation or fetch failed:", err);
         localStorage.removeItem("token");
         setUser(null);
       }
     };
 
-    fetchUserFromToken();
+    setTimeout(fetchUserFromToken, 100); 
   }, [socket]);
+
+  useEffect(() => {
+    if (user && user._id) {
+      devLog("[AuthContext] Registering socket for user:", user._id);
+      socket.emit("register-user", user._id);
+    }
+  }, [user, socket]);
 
   return (
     <AuthContext.Provider
-      value={{ user, setUser, selectedUser, setSelectedUser, socket }}
+      value={{
+        user,
+        setUser,
+        selectedUser,
+        setSelectedUser,
+        socket,
+      }}
     >
       {children}
     </AuthContext.Provider>

@@ -1,12 +1,16 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { MoreHorizontal, LogOut, Settings } from "lucide-react";
+import { AuthContext } from "../context/AuthContext";
 
 export default function OptionsMenu() {
   const [open, setOpen] = useState(false);
+  const { setUser, setSelectedUser } = useContext(AuthContext);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
-    window.location.reload();
+    setUser(undefined);
+    setSelectedUser(null);
+    window.location.reload(); 
   };
 
   return (

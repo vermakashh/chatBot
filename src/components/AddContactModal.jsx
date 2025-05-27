@@ -4,6 +4,7 @@ import axios from "axios";
 export default function AddContactModal({ userId, onClose, onContactAdded }) {
   const [allUsers, setAllUsers] = useState([]);
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!userId) {
@@ -11,6 +12,7 @@ export default function AddContactModal({ userId, onClose, onContactAdded }) {
       return;
     }
 
+    setLoading(true);
     axios
       .get("https://chatbot-01ki.onrender.com/api/auth/users")
       .then((res) => {
@@ -20,7 +22,8 @@ export default function AddContactModal({ userId, onClose, onContactAdded }) {
       .catch((err) => {
         console.error("Failed to fetch users:", err);
         alert("Error fetching users. Please try again.");
-      });
+      })
+      .finally(() => setLoading(false));
   }, [userId]);
 
   const handleAdd = async (contactId) => {
@@ -53,6 +56,7 @@ export default function AddContactModal({ userId, onClose, onContactAdded }) {
     <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg w-96 max-h-[80vh] overflow-y-auto shadow-lg">
         <h2 className="text-lg font-bold mb-4">Add Contact</h2>
+
         <input
           type="text"
           placeholder="Search username..."
@@ -60,7 +64,10 @@ export default function AddContactModal({ userId, onClose, onContactAdded }) {
           onChange={(e) => setSearch(e.target.value)}
           className="w-full mb-3 px-3 py-2 border rounded text-sm"
         />
-        {filtered.length > 0 ? (
+
+        {loading ? (
+          <p className="text-sm text-gray-500">Loading users...</p>
+        ) : filtered.length > 0 ? (
           filtered.map((u) => (
             <div key={u._id} className="flex justify-between items-center mb-2">
               <span>{u.username}</span>
@@ -75,6 +82,7 @@ export default function AddContactModal({ userId, onClose, onContactAdded }) {
         ) : (
           <p className="text-sm text-gray-500">No users found</p>
         )}
+
         <button
           className="mt-4 text-sm text-red-500 hover:underline"
           onClick={onClose}

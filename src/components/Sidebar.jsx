@@ -5,7 +5,7 @@ import OptionsMenu from "./OptionsMenu";
 import logo from "./assets/logo.png";
 import { FiTrash2 } from "react-icons/fi";
 import AddContactModal from "./AddContactModal";
-import { Pencil } from "lucide-react"; // 👈 Import Pencil icon
+import { Pencil } from "lucide-react";
 
 export default function Sidebar() {
   const { user, setSelectedUser, socket, selectedUser } = useContext(AuthContext);
@@ -19,27 +19,31 @@ export default function Sidebar() {
   }, [socket]);
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?._id) return;
 
-    axios
-      .get(`https://chatbot-01ki.onrender.com/api/auth/contacts/${user.id}`)
-      .then((res) => setUsers(res.data))
-      .catch((err) => {
-        console.error("Failed to fetch contacts:", err);
-      });
+    requestIdleCallback(() => {
+      axios
+        .get(`https://chatbot-01ki.onrender.com/api/auth/contacts/${user._id}`)
+        .then((res) => {
+          setUsers(res.data);
+        })
+        .catch((err) => {
+          console.error("Failed to fetch contacts:", err);
+        });
+    });
   }, [user]);
 
   const handleDeleteContact = async (contactId) => {
     if (!window.confirm("Are you sure you want to delete this contact?")) return;
 
     try {
-      await axios.delete(`https://chatbot-01ki.onrender.com/api/auth/contacts/${user.id}/${contactId}`);
+      await axios.delete(`https://chatbot-01ki.onrender.com/api/auth/contacts/${user._id}/${contactId}`);
       setUsers((prev) => prev.filter((u) => u._id !== contactId));
       if (selectedUser?._id === contactId) {
         setSelectedUser(null);
       }
     } catch (err) {
-      console.error("Error deleting contact:", err, err.response?.data || err.message);
+      console.error("Error deleting contact:", err);
       alert("Failed to delete contact. Try again.");
     }
   };
@@ -49,11 +53,7 @@ export default function Sidebar() {
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b h-16">
         <div className="h-8 w-auto">
-          <img
-            src={logo}
-            alt="ChatBot Logo"
-            className="h-full w-full object-contain"
-          />
+          <img src={logo} alt="ChatBot Logo" className="h-full w-full object-contain" />
         </div>
         <OptionsMenu />
       </div>
@@ -104,7 +104,7 @@ export default function Sidebar() {
       {/* Modal for Add Contact */}
       {showAddModal && (
         <AddContactModal
-          userId={user.id}
+          userId={user._id}
           onClose={() => setShowAddModal(false)}
           onContactAdded={(newContact) => setUsers((prev) => [...prev, newContact])}
         />

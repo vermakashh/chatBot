@@ -1,5 +1,5 @@
 import { useState, useContext } from "react";
-import { X } from "lucide-react";
+import { X, Upload } from "lucide-react";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
 
@@ -67,17 +67,19 @@ export default function VoiceUploadModal({ onClose, onUploadSuccess }) {
               className="hidden"
               onChange={handleFileChange}
             />
-            <div className="text-center text-gray-700">
-              ⬆️ Upload 30–60 sec audio sample<br />
-              <span className="text-sm text-gray-500">(WAV format only)</span>
+            <div className="flex flex-col items-center text-center text-gray-700">
+              <Upload className="mb-2 text-gray-700" style={{ width: "35px", height: "35px" }} />
+              <span className="text-base">Upload 10 Sec Audio Sample</span>
+              <span className="text-sm text-gray-500">(WAV Format Only)</span>
             </div>
-          </label>
-          {audioFile && (
+            </label>
+
+            {audioFile && (
             <p className="text-sm text-gray-600 mt-2">
-              Selected: <strong>{audioFile.name}</strong>
-            </p>
-          )}
-        </div>
+            Selected: <strong>{audioFile.name}</strong>
+                </p>
+              )}
+            </div>
 
         <p className="text-sm text-gray-600 mb-6">
           Your voice will be used to personalize AI speech output in this chat.

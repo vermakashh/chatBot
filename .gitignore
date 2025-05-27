@@ -1,46 +1,77 @@
-# ================================
-# === Node.js / React Frontend ===
-# ================================
+# Node.js / React Frontend
+
 node_modules/
 build/
 dist/
+.cache/
+.eslintcache
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+*.map
+
+# Tailwind / PostCSS
+.postcssrc
+tailwind.config.js
+
+# React Env Files
 .env.local
 .env.development
 .env.production
+.env.test
 
-# ==========================
-# === Express Backend ===
-# ==========================
+# Express / Node Backend
+
 backend/node_modules/
 backend/.env
+backend/dist/
 
-# ===============================
-# === Python (XTTS Server) ===
-# ===============================
+# Python / XTTS / Whisper / ASR / TTS
+
 env/
 envtts/
+env_main/
 .venv/
 __pycache__/
 *.py[cod]
+*.sqlite3
+*.db
+*.json
 *.log
 
-# XTTS model checkpoints & audio
-tts/checkpoint/
+# Temporary audio or uploads
+uploads/
+temp_audio/
+*.mp3
+*.ogg
+*.wav
+
+# Jupyter Notebook Checkpoints
+**/.ipynb_checkpoints/
+
+# XTTS output and models
 tts/output/
 tts/ref_audio/
 tts/*.pth
 tts/*.wav
+tts/checkpoint/
 tts/.env
+tts/**/env*
+tts/**/output/
+tts/**/ref_audio/
+tts/**/*.pth
+tts/**/*.wav
+tts/**/*.bin
 
-# =====================
-# === Editor / OS ===
-# =====================
+# IndicTrans model folders
+IndicTrans2/
+IndicTransToolkit/
+
+# VS Code / Editor / OS Artifacts
+
 .DS_Store
-.vscode/
 .idea/
+.vscode/
 *.swp
 *.swo
