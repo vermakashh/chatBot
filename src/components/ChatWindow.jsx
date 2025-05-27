@@ -98,7 +98,7 @@ export default function ChatWindow() {
 
     try {
       requestIdleCallback(() => setSynthesizingIndex(index));
-      const res = await fetch("<Backend-Link>/api/tts-clone", {
+      const res = await fetch("https://d307-192-140-153-90.ngrok-free.app/api/tts-clone", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: messageText, user_id: userId }),

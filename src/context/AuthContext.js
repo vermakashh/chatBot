@@ -2,7 +2,7 @@ import { createContext, useEffect, useMemo, useState } from "react";
 import { io } from "socket.io-client";
 import { jwtDecode } from "jwt-decode";
 import axios from "axios";
-import { devLog, devWarn, devError } from "../utils/logger";
+import { devLog, devWarn, devError } from "../Utils/logger";
 
 export const AuthContext = createContext();
 
